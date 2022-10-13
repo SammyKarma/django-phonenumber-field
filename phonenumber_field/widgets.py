@@ -38,8 +38,7 @@ def localized_choices(language):
     locale_name = translation.to_locale(language)
     locale = babel.Locale(locale_name)
     for region_code, country_code in REGION_CODE_TO_COUNTRY_CODE.items():
-        region_name = locale.territories.get(region_code)
-        if region_name:
+        if region_name := locale.territories.get(region_code):
             choices.append((region_code, f"{region_name} +{country_code}"))
     return choices
 
@@ -150,11 +149,10 @@ class RegionalPhoneNumberWidget(TextInput):
         return to_python(phone_number_str, region=self.region)
 
     def format_value(self, value):
-        if isinstance(value, PhoneNumber):
-            if value.is_valid():
-                region_codes = region_codes_for_country_code(value.country_code)
-                if self.region in region_codes:
-                    return value.as_national
+        if isinstance(value, PhoneNumber) and value.is_valid():
+            region_codes = region_codes_for_country_code(value.country_code)
+            if self.region in region_codes:
+                return value.as_national
         return super().format_value(value)
 
 
@@ -169,10 +167,9 @@ class PhoneNumberInternationalFallbackWidget(RegionalPhoneNumberWidget):
         )
 
     def format_value(self, value):
-        if isinstance(value, PhoneNumber):
-            if value.is_valid():
-                region_codes = region_codes_for_country_code(value.country_code)
-                if self.region in region_codes:
-                    return value.as_national
-                return value.as_international
+        if isinstance(value, PhoneNumber) and value.is_valid():
+            region_codes = region_codes_for_country_code(value.country_code)
+            if self.region in region_codes:
+                return value.as_national
+            return value.as_international
         return super().format_value(value)

@@ -32,14 +32,10 @@ class PhoneNumberDescriptor:
         if instance is None:
             return self
 
-        # The instance dict contains whatever was originally assigned in
-        # __set__.
         if self.field.name in instance.__dict__:
-            value = instance.__dict__[self.field.name]
-        else:
-            instance.refresh_from_db(fields=[self.field.name])
-            value = getattr(instance, self.field.name)
-        return value
+            return instance.__dict__[self.field.name]
+        instance.refresh_from_db(fields=[self.field.name])
+        return getattr(instance, self.field.name)
 
     def __set__(self, instance, value):
         instance.__dict__[self.field.name] = to_python(value, region=self.field.region)
@@ -85,12 +81,7 @@ class PhoneNumberField(models.CharField):
         if not value:
             return super().get_prep_value(value)
 
-        if isinstance(value, PhoneNumber):
-            parsed_value = value
-        else:
-            # Convert the string to a PhoneNumber object.
-            parsed_value = to_python(value)
-
+        parsed_value = value if isinstance(value, PhoneNumber) else to_python(value)
         if parsed_value.is_valid():
             # A valid phone number. Normalize it for storage.
             format_string = getattr(settings, "PHONENUMBER_DB_FORMAT", "E164")
@@ -116,6 +107,6 @@ class PhoneNumberField(models.CharField):
             "form_class": formfields.PhoneNumberField,
             "region": self.region,
             "error_messages": self.error_messages,
-        }
-        defaults.update(kwargs)
+        } | kwargs
+
         return super().formfield(**defaults)
